@@ -87,7 +87,7 @@ def compute_accuracy_score(y_true, y_pred, normalize=True):
     return score.sum()
 
 
-def compute_cross_val_score(X, y, estimator=None, cv=5, verbose=False):
+def compute_cross_val_score(X, y, estimator=None, cv=5):
     """Generate evaluation scores by using cross-validation
 
     Parameters
@@ -96,8 +96,7 @@ def compute_cross_val_score(X, y, estimator=None, cv=5, verbose=False):
     X
     y
     cv
-    verbose
-
+    
     Returns
     -------
     scores: array
@@ -134,16 +133,9 @@ def compute_cross_val_score(X, y, estimator=None, cv=5, verbose=False):
 
     for i in range(cv):
         if (i+1)*k < (m-r):
-            #print(i*k, (i+1)*k)
-            #print(data[(i*k):(i+1)*k])
             folds.append(data[(i*k):(i+1)*k])
-
-            #print(len(data[(i*k):(i+1)*k]))
         else:
-            #print(i*k, ((i+1)*k)+r)
-            #print(data[(i*k):((i+1)*k)+r])
             folds.append(data[(i*k):((i+1)*k)+r])
-            #print(len(data[(i*k):((i+1)*k)+r]))
     
     scores = []
 
@@ -151,10 +143,14 @@ def compute_cross_val_score(X, y, estimator=None, cv=5, verbose=False):
         training_set = [fold for j, fold in enumerate(folds) if i!=j]
         training_set = [item for sublist in training_set for item in sublist]
         training_set = np.matrix(training_set)
-
+        training_set = np.squeeze(np.asarray(training_set))
+        
         X_train, y_train = training_set[:, :-1], training_set[:, -1]
         X_val, y_val = fold[:, :-1], fold[:, -1]
-
+                
         estimator.fit(X_train, y_train)
-        scores.append(compute_accuracy_score(X_val, y_val)) # val corresponds to the current i (the current validation set)
-
+        y_pred = estimator.predict(X_val)
+        score = float(compute_accuracy_score(y_val, y_pred, normalize=True))
+        scores.append(score) # val is the current i - current validation set index
+    
+    return scores
